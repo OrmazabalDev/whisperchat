@@ -45,7 +45,7 @@ export function useTranslation() {
       const fromLang = sourceLang || detectLanguage(text);
       
       if (fromLang === targetLanguage) {
-        setTranslationCache(prev => ({ ...prev, [cacheKey]: text }));
+        setTranslationCache((prev: TranslationCache) => ({ ...prev, [cacheKey]: text }));
         return text;
       }
 
@@ -59,7 +59,7 @@ export function useTranslation() {
         ? data[0].map((item: any) => item[0]).join('') 
         : text;
 
-      setTranslationCache(prev => ({ ...prev, [cacheKey]: translatedText }));
+      setTranslationCache((prev: TranslationCache) => ({ ...prev, [cacheKey]: translatedText }));
       return translatedText;
     } catch {
       return text;

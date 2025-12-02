@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { isValidNickname } from './utils';
+import { isValidNickname } from '../../utils';
 import { Terminal, Shield, Zap } from 'lucide-react';
 
 interface WelcomeScreenProps {

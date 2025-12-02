@@ -1,4 +1,8 @@
-// Generar sonido de notificación usando Web Audio API
+/**
+ * Notification sound utility
+ * Pure function with no external dependencies
+ */
+
 export function playNotificationSound(volume: number = 0.5) {
   try {
     console.log('🔊 Reproduciendo sonido de notificación - Volumen:', volume);

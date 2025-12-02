@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
-import { db } from './firebase';
+import { db } from '../firebase';
 
 interface UseUserPresenceReturn {
   isOnline: boolean;
@@ -22,7 +22,7 @@ export function useUserPresence(sessionId: string | null): UseUserPresenceReturn
 
     const unsubscribe = onValue(
       sessionPresenceRef,
-      (snapshot) => {
+      (snapshot: any) => {
         const presence = snapshot.val();
         if (presence) {
           setIsOnline(presence.online === true);

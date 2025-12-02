@@ -1,37 +1,38 @@
-﻿import { useEffect, useState, useCallback } from 'react';
-import { ref, push, onValue, query, orderByChild, limitToLast, serverTimestamp, update } from 'firebase/database';
-import { db } from './firebase';
-import { Message, Reaction } from './types';
-import { getUserNickname } from './useAuth';
-import { encryptMessage, decryptMessage } from './utils';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { Message, Reaction } from '../types';
+import { dbService } from '../services/db.service';
+import { cryptoService } from '../services/crypto.service';
+import { useCryptoContext } from './CryptoContext';
+import { useAuthContext } from './AuthContext';
 
-interface UseChatReturn {
+interface ChatContextType {
   messages: Message[];
   loading: boolean;
   error: string | null;
-  sendMessage: (text: string, fileData?: { url: string; fileName: string; fileType: string; fileSize: number; storagePath: string }) => Promise<void>;
+  activeUsers: number;
+  sendMessage: (text: string, fileData?: any) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
 }
 
-export function useChat(userId: string | null, encryptionKey: CryptoKey | null): UseChatReturn {
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
+
+export function ChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeUsers, setActiveUsers] = useState(0);
 
+  const { encryptionKey, decryptMessage } = useCryptoContext();
+  const { user, nickname } = useAuthContext();
+
+  // Listen to messages
   useEffect(() => {
-    if (!userId) {
+    if (!user) {
       setLoading(false);
       return;
     }
 
-    const messagesQuery = query(
-      ref(db, 'messages'),
-      orderByChild('timestamp'),
-      limitToLast(100)
-    );
-
-    const unsubscribe = onValue(
-      messagesQuery,
+    const unsubscribe = dbService.listenToMessages(
       async (snapshot) => {
         const messageList: Message[] = [];
         const snapshotVal = snapshot.val();
@@ -43,7 +44,7 @@ export function useChat(userId: string | null, encryptionKey: CryptoKey | null):
             
             if (msg.encrypted && msg.encryptedContent && encryptionKey) {
               try {
-                displayText = await decryptMessage(msg.encryptedContent, encryptionKey);
+                displayText = await decryptMessage(msg.encryptedContent);
               } catch {
                 displayText = '🔒 [Unable to decrypt]';
               }
@@ -53,11 +54,11 @@ export function useChat(userId: string | null, encryptionKey: CryptoKey | null):
               displayText = msg.text || '[Empty message]';
             }
             
-            // Desencriptar nombre de archivo si existe
+            // Decrypt filename if exists
             let decryptedFileName = msg.fileName;
             if (msg.encryptedFileName && encryptionKey) {
               try {
-                decryptedFileName = await decryptMessage(msg.encryptedFileName, encryptionKey);
+                decryptedFileName = await decryptMessage(msg.encryptedFileName);
               } catch {
                 decryptedFileName = '🔒 [Encrypted file]';
               }
@@ -96,38 +97,54 @@ export function useChat(userId: string | null, encryptionKey: CryptoKey | null):
     );
 
     return () => unsubscribe();
-  }, [userId, encryptionKey]);
+  }, [user, encryptionKey, decryptMessage]);
 
-  const sendMessage = useCallback(async (text: string, fileData?: { url: string; fileName: string; fileType: string; fileSize: number; storagePath: string }): Promise<void> => {
-    if (!userId) throw new Error('Not authenticated');
+  // Listen to presence
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = dbService.listenToPresence(
+      (snapshot) => {
+        const presence = snapshot.val();
+        if (presence) {
+          const count = Object.values(presence).filter(
+            (p: any) => p.online && Date.now() - p.lastSeen < 30000
+          ).length;
+          setActiveUsers(count);
+        } else {
+          setActiveUsers(0);
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const sendMessage = useCallback(async (text: string, fileData?: any): Promise<void> => {
+    if (!user) throw new Error('Not authenticated');
     if (!text?.trim() && !fileData) throw new Error('Message or file required');
+    if (!encryptionKey) throw new Error('Encryption not available');
 
     try {
       const trimmed = text.trim();
+      const encryptedContent = await cryptoService.encryptMessage(trimmed, encryptionKey);
+      let encryptedFileName: string | undefined;
       
-      if (!encryptionKey) {
-        throw new Error('Encryption not available');
-      }
-
-      // Encriptar contenido y nombre de archivo en paralelo si aplica
-      const encryptionTasks = [encryptMessage(trimmed, encryptionKey)];
       if (fileData) {
-        encryptionTasks.push(encryptMessage(fileData.fileName, encryptionKey));
+        encryptedFileName = await cryptoService.encryptMessage(fileData.fileName, encryptionKey);
       }
-      
-      const [encryptedContent, encryptedFileName] = await Promise.all(encryptionTasks);
       
       const messageData: any = {
         text: '🔒',
-        nickname: getUserNickname(),
-        sessionId: userId,
+        nickname,
+        sessionId: user.uid,
         timestamp: Date.now(),
-        createdAt: serverTimestamp(),
+        createdAt: dbService.getServerTimestamp(),
         encrypted: true,
         encryptedContent,
       };
 
-      // Agregar datos de archivo si existen
+      // Add file data if exists
       if (fileData && encryptedFileName) {
         messageData.fileUrl = fileData.url;
         messageData.fileName = '🔒';
@@ -138,54 +155,73 @@ export function useChat(userId: string | null, encryptionKey: CryptoKey | null):
         messageData.encryptedFile = true;
       }
 
-      await push(ref(db, 'messages'), messageData);
+      await dbService.sendMessage(messageData);
     } catch {
       throw new Error('Failed to send message');
     }
-  }, [userId, encryptionKey]);
+  }, [user, nickname, encryptionKey]);
 
   const addReaction = useCallback(async (messageId: string, emoji: string): Promise<void> => {
-    if (!userId) throw new Error('Not authenticated');
+    if (!user) throw new Error('Not authenticated');
     
     try {
-      const currentUserNickname = getUserNickname();
-      const message = messages.find(m => m.id === messageId);
-      
+      const message = messages.find((m: Message) => m.id === messageId);
       if (!message) throw new Error('Message not found');
       
       const reactions = message.reactions || [];
-      const existingReaction = reactions.find(r => r.emoji === emoji);
+      const existingReaction = reactions.find((r: Reaction) => r.emoji === emoji);
       
       let updatedReactions: Reaction[];
       
       if (existingReaction) {
-        const hasUserReacted = existingReaction.users.includes(currentUserNickname);
+        const hasUserReacted = existingReaction.users.includes(nickname);
         
         if (hasUserReacted) {
-          // Eliminar reacción - filtrar usuarios y remover si count llega a 0
+          // Remove reaction
           updatedReactions = reactions
-            .map(r => r.emoji === emoji 
-              ? { ...r, count: r.count - 1, users: r.users.filter(u => u !== currentUserNickname) }
+            .map((r: Reaction) => r.emoji === emoji 
+              ? { ...r, count: r.count - 1, users: r.users.filter((u: string) => u !== nickname) }
               : r
             )
-            .filter(r => r.count > 0);
+            .filter((r: Reaction) => r.count > 0);
         } else {
-          // Agregar usuario a reacción existente
-          updatedReactions = reactions.map(r => r.emoji === emoji 
-            ? { ...r, count: r.count + 1, users: [...r.users, currentUserNickname] }
+          // Add user to existing reaction
+          updatedReactions = reactions.map((r: Reaction) => r.emoji === emoji 
+            ? { ...r, count: r.count + 1, users: [...r.users, nickname] }
             : r
           );
         }
       } else {
-        // Crear nueva reacción
-        updatedReactions = [...reactions, { emoji, count: 1, users: [currentUserNickname] }];
+        // Create new reaction
+        updatedReactions = [...reactions, { emoji, count: 1, users: [nickname] }];
       }
       
-      await update(ref(db, `messages/${messageId}`), { reactions: updatedReactions });
+      await dbService.updateReactions(messageId, updatedReactions);
     } catch {
       throw new Error('Failed to add reaction');
     }
-  }, [userId, messages]);
+  }, [user, nickname, messages]);
 
-  return { messages, loading, error, sendMessage, addReaction };
+  return (
+    <ChatContext.Provider 
+      value={{ 
+        messages, 
+        loading, 
+        error, 
+        activeUsers,
+        sendMessage, 
+        addReaction 
+      }}
+    >
+      {children}
+    </ChatContext.Provider>
+  );
+}
+
+export function useChatContext() {
+  const context = useContext(ChatContext);
+  if (context === undefined) {
+    throw new Error('useChatContext must be used within ChatProvider');
+  }
+  return context;
 }

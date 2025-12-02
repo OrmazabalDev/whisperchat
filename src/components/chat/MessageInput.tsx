@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
-import FileUploadButton from './FileUploadButton';
+import FileUploadButton from '../ui/FileUploadButton';
 
 interface MessageInputProps {
   onSendMessage: (text: string, file?: { url: string; fileName: string; fileType: string; fileSize: number; storagePath: string }) => Promise<void>;
@@ -22,7 +22,6 @@ const MessageInput = memo(({ onSendMessage, disabled = false, mentionedUser, onC
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileData, setFileData] = useState<{ url: string; fileName: string; fileType: string; fileSize: number; storagePath: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -73,21 +72,7 @@ const MessageInput = memo(({ onSendMessage, disabled = false, mentionedUser, onC
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setMessage(newValue);
-    
-    // Debouncing para typing status
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    if (onTyping) {
-      const isTyping = newValue.trim().length > 0;
-      onTyping(isTyping);
-      
-      // Auto-limpiar después de 2 segundos de inactividad
-      typingTimeoutRef.current = setTimeout(() => {
-        onTyping(false);
-      }, 2000);
-    }
+    onTyping?.(newValue.trim().length > 0);
   }, [onTyping]);
 
   const handleClearFile = useCallback(() => {
@@ -106,16 +91,7 @@ const MessageInput = memo(({ onSendMessage, disabled = false, mentionedUser, onC
       setMessage('');
       setSelectedFile(null);
       setFileData(null);
-      
-      // Limpiar estado de escritura
-      if (onTyping) {
-        onTyping(false);
-      }
-      
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      
+      onTyping?.(false);
       textareaRef.current?.focus();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send');

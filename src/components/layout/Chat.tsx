@@ -1,25 +1,19 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useAuth, getUserNickname } from './useAuth';
-import { useChat } from './useChat';
-import { usePresence } from './usePresence';
-import { useEncryption } from './useEncryption';
-import { useMessageCleanup } from './useMessageCleanup';
-import { useFileUpload } from './useFileUpload';
-import { useTypingStatus, useTypingListeners } from './useTypingStatus';
-import { useTranslation, SUPPORTED_LANGUAGES } from './useTranslation';
-import WelcomeScreen from './WelcomeScreen';
-import MessageList from './MessageList';
-import MessageInput from './MessageInput';
+import { useAuthContext, useCryptoContext, useChatContext } from '../../contexts';
+import { usePresence, useMessageCleanup, useTypingStatus, useTranslation, useMediaUpload, SUPPORTED_LANGUAGES } from '../../hooks';
+import WelcomeScreen from '../ui/WelcomeScreen';
+import MessageList from '../chat/MessageList';
+import MessageInput from '../chat/MessageInput';
 import { Terminal, Wifi, Users, Shield, Trash2, Timer, LogOut, Volume2, VolumeX, Languages } from 'lucide-react';
 import { ref, remove } from 'firebase/database';
-import { db } from './firebase';
+import { db } from '../../firebase';
 
 const Chat = () => {
-  const { user, loading: authLoading, error: authError, signInAnonymous } = useAuth();
-  const { encryptionKey, loading: encryptionLoading } = useEncryption();
-  const { messages, loading: chatLoading, error: chatError, sendMessage, addReaction } = useChat(user?.uid || null, encryptionKey);
-  const { onlineCount, loading: presenceLoading } = usePresence(user?.uid || null);
-  const { uploadFile, downloadFile, uploading: uploadingFile } = useFileUpload(encryptionKey);
+  const { user, loading: authLoading, error: authError, signInAnonymous, nickname } = useAuthContext();
+  const { encryptionKey, loading: encryptionLoading } = useCryptoContext();
+  const { messages, loading: chatLoading, error: chatError, sendMessage, addReaction, activeUsers } = useChatContext();
+  const { onlineCount, loading: presenceLoading } = usePresence();
+  const { uploadFile, downloadFile, uploading: uploadingFile } = useMediaUpload();
   const [mentionedUser, setMentionedUser] = useState('');
   const [countdown, setCountdown] = useState(120);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
@@ -28,8 +22,7 @@ const Chat = () => {
   );
   
   // Estado de escritura en tiempo real
-  const { setTyping } = useTypingStatus(user?.uid || null, getUserNickname());
-  const typingUsers = useTypingListeners(user?.uid || null);
+  const { setTyping, typingUsers } = useTypingStatus();
   
   // Traducción
   const { translateText, targetLanguage, changeTargetLanguage } = useTranslation();
@@ -64,11 +57,7 @@ const Chat = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showLanguageMenu]);
 
-  // Memoizar lista de usuarios online para evitar recalculaciones
-  const onlineUsers = useMemo(() => 
-    [...new Set(messages.map(msg => msg.nickname))], 
-    [messages]
-  );
+  const onlineUsers = [...new Set(messages.map(msg => msg.nickname))];
 
   const handleMention = useCallback((nickname: string) => {
     setMentionedUser(nickname);
@@ -95,12 +84,6 @@ const Chat = () => {
       window.location.reload();
     }
   }, [user]);
-  
-  // Memoizar nickname para evitar llamadas repetitivas
-  const currentUserNickname = useMemo(() => getUserNickname(), []);
-  
-  // Memoizar error combinado
-  const combinedError = useMemo(() => authError || chatError, [authError, chatError]);
 
   if (authLoading || encryptionLoading) {
     return (
@@ -291,7 +274,7 @@ const Chat = () => {
         <div className="flex items-center gap-2 px-4 py-2 mt-3 rounded text-xs border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
           <Shield className="w-4 h-4" style={{ color: 'var(--primary)' }} />
           <span style={{ color: 'var(--muted-foreground)' }}>
-            {'>'} Connected as <span className="font-bold" style={{ color: 'var(--primary)' }}>{getUserNickname()}</span> · <span className="font-bold" style={{ color: 'var(--primary)' }}>E2E Encrypted</span> · Firebase cannot read your messages
+            {'>'} Connected as <span className="font-bold" style={{ color: 'var(--primary)' }}>{nickname}</span> · <span className="font-bold" style={{ color: 'var(--primary)' }}>E2E Encrypted</span> · Firebase cannot read your messages
           </span>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 mt-2 rounded text-xs border" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--destructive)' }}>
@@ -302,9 +285,9 @@ const Chat = () => {
         </div>
       </header>
 
-      {combinedError && (
+      {(authError || chatError) && (
         <div className="px-4 py-3 text-sm border-b" role="alert" style={{ background: 'var(--destructive)', borderColor: 'var(--border)' }}>
-          {combinedError}
+          {authError || chatError}
         </div>
       )}
 
@@ -313,7 +296,7 @@ const Chat = () => {
         currentUserId={user.uid}
         loading={chatLoading}
         onMention={handleMention}
-        currentUserNickname={currentUserNickname}
+        currentUserNickname={nickname}
         onReaction={addReaction}
         notificationVolume={notificationVolume}
         onDownloadFile={downloadFile}

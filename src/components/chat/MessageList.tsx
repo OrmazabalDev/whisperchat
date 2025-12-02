@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
-import type { Message as MessageType } from './types';
+import type { Message as MessageType } from '../../types';
 import Message from './Message';
-import { playNotificationSound } from './notificationSound';
+import { playNotificationSound } from '../../utils';
 
 interface MessageListProps {
   messages: MessageType[];

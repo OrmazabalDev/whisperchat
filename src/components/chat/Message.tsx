@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, memo, useCallback } from 'react';
-import type { Message as MessageType } from './types';
-import { formatFullTimestamp } from './utils';
+import type { Message as MessageType } from '../../types';
+import { formatFullTimestamp } from '../../utils';
 import { MessageSquare, Clock, Shield, Download, FileText, FileArchive, Languages } from 'lucide-react';
-import { useUserPresence } from './useUserPresence';
+import { useUserPresence } from '../../hooks';
 
 interface MessageProps {
   message: MessageType;
@@ -19,8 +19,31 @@ interface MessageProps {
 
 const CYBER_REACTIONS = ['🔥', '⚡', '💀', '👾', '🎯', '💎'];
 
-// Caché de traducciones para evitar re-traducir
-const translationCache = new Map<string, string>();
+class LRUCache {
+  private cache = new Map<string, string>();
+  private maxSize = 50;
+
+  get(key: string): string | undefined {
+    const value = this.cache.get(key);
+    if (value) {
+      this.cache.delete(key);
+      this.cache.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: string, value: string): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    this.cache.set(key, value);
+  }
+}
+
+const translationCache = new LRUCache();
 
 const Message = memo(({ message, isOwnMessage, allMessages, currentUserNickname, onReaction, onDownloadFile, encryptionKey, translateText, isTranslationEnabled }: MessageProps) => {
   const [showModal, setShowModal] = useState(false);
@@ -51,10 +74,10 @@ const Message = memo(({ message, isOwnMessage, allMessages, currentUserNickname,
   const handleTranslate = useCallback(async () => {
     if (!translateText || !message.text) return;
     
-    // Verificar caché primero
     const cacheKey = `${message.text}_${message.id}`;
-    if (translationCache.has(cacheKey)) {
-      setTranslatedText(translationCache.get(cacheKey)!);
+    const cached = translationCache.get(cacheKey);
+    if (cached) {
+      setTranslatedText(cached);
       setShowTranslation(true);
       return;
     }
@@ -80,28 +103,10 @@ const Message = memo(({ message, isOwnMessage, allMessages, currentUserNickname,
     if (!message.fileUrl || !encryptionKey) return;
     
     try {
-      // Extraer Base64 del data URL de forma optimizada
-      const base64Data = message.fileUrl.split(',')[1];
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      
-      // Optimización: llenar array en un solo loop
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      // Desencriptar
-      const iv = bytes.slice(0, 12);
-      const content = bytes.slice(12);
-      
-      const decryptedContent = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv },
-        encryptionKey,
-        content
-      );
-      
-      // Crear blob URL para preview
-      const blob = new Blob([decryptedContent], { type: message.fileType });
+      const { storageService } = await import('../../services/storage.service');
+      const encryptedBuffer = storageService.dataUrlToArrayBuffer(message.fileUrl);
+      const decryptedBuffer = await storageService.decryptFile(encryptedBuffer, encryptionKey);
+      const blob = new Blob([decryptedBuffer], { type: message.fileType });
       const url = URL.createObjectURL(blob);
       setImagePreview(url);
     } catch {}

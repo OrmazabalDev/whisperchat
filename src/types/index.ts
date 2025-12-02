@@ -34,3 +34,17 @@ export interface ChatState {
   error: string | null;
   connected: boolean;
 }
+
+export interface PresenceData {
+  userId: string;
+  nickname: string;
+  online: boolean;
+  lastSeen: number;
+}
+
+export interface TypingStatus {
+  userId: string;
+  nickname: string;
+  isTyping: boolean;
+  timestamp: number;
+}

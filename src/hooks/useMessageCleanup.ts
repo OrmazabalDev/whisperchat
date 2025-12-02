@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ref, remove, set, get, onValue } from 'firebase/database';
-import { db } from './firebase';
+import { db } from '../firebase';
 
 export function useMessageCleanup(enabled: boolean = true) {
   const [nextCleanupTime, setNextCleanupTime] = useState<number | null>(null);
@@ -27,7 +27,7 @@ export function useMessageCleanup(enabled: boolean = true) {
     };
 
     // Escuchar cambios en el timer
-    const unsubscribe = onValue(cleanupTimerRef, (snapshot) => {
+    const unsubscribe = onValue(cleanupTimerRef, (snapshot: any) => {
       if (snapshot.exists()) {
         setNextCleanupTime(snapshot.val());
       }

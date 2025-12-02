@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ref, set, onDisconnect } from 'firebase/database';
-import { db } from './firebase';
-import { generateEphemeralId, getStorageItem, setStorageItem } from './utils';
+import { db } from '../firebase';
+import { generateEphemeralId, getStorageItem, setStorageItem } from '../utils';
 
 function getSessionId(): string {
   let sessionId = getStorageItem('ephemeral_session_id');
