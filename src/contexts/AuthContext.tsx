@@ -67,14 +67,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
 
-      if (newNickname) {
-        const normalizedNickname = newNickname.toLowerCase();
-        authService.setUserNickname(normalizedNickname);
-        setNicknameState(normalizedNickname);
-      }
-
+      // Generar sessionId primero (necesario para generar nickname)
       const sessionId = authService.getSessionId();
-      const finalNickname = (newNickname || authService.getUserNickname()).toLowerCase();
+      
+      // Determinar nickname: usar el proporcionado o generar uno automático
+      let finalNickname: string;
+      if (newNickname && newNickname.trim()) {
+        // Usuario proporcionó un nickname
+        finalNickname = newNickname.trim().toLowerCase();
+        authService.setUserNickname(finalNickname);
+      } else {
+        // Generar nickname automático basado en sessionId
+        finalNickname = authService.getUserNickname();
+      }
+      
+      setNicknameState(finalNickname);
       
       // Actualizar sesión en Firebase con nickname e índice
       const sessionRef = ref(db, `anonymous_sessions/${sessionId}`);
