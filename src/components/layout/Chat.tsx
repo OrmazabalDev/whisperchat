@@ -5,7 +5,7 @@ import WelcomeScreen from '../ui/WelcomeScreen';
 import Sidebar from '../ui/Sidebar';
 import MessageList from '../chat/MessageList';
 import MessageInput from '../chat/MessageInput';
-import { Terminal, Wifi, Users, Shield, Trash2, Timer, Volume2, VolumeX, Languages, Menu, X, XCircle } from 'lucide-react';
+import { Terminal, Users, Timer, Volume2, VolumeX, Languages, Menu, X, XCircle } from 'lucide-react';
 import { ref, remove } from 'firebase/database';
 import { db } from '../../firebase';
 
@@ -26,6 +26,8 @@ const Chat = () => {
   const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(() => 
     localStorage.getItem('autoTranslate') === 'true'
   );
+  const [showEndChatModal, setShowEndChatModal] = useState(false);
+  const [dmCountdown, setDmCountdown] = useState<number | null>(null);
   
   // Estado de escritura en tiempo real
   const { setTyping, typingUsers } = useTypingStatus();
@@ -62,6 +64,31 @@ const Chat = () => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showLanguageMenu]);
+
+  // Detectar mensaje del sistema y activar countdown de 30s
+  useEffect(() => {
+    if (!activeConversation || dmMessages.length === 0) {
+      setDmCountdown(null);
+      return;
+    }
+
+    const lastMessage = dmMessages[dmMessages.length - 1];
+    if (lastMessage.isSystemMessage && lastMessage.text.includes('Chat terminado')) {
+      setDmCountdown(30);
+      const startTime = Date.now();
+      const endTime = startTime + 30000;
+
+      const interval = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        setDmCountdown(remaining);
+        if (remaining === 0) {
+          clearInterval(interval);
+        }
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+  }, [dmMessages, activeConversation]);
 
   const onlineUsers = [...new Set(messages.map(msg => msg.nickname))];
 
@@ -221,18 +248,28 @@ const Chat = () => {
           </div>
 
           <div className="flex items-center gap-2 text-xs flex-wrap" style={{ flexShrink: 0 }}>
-            {activeConversation && (
-              <button
-                onClick={() => endConversation(activeConversation)}
-                className="status-badge hover:bg-destructive/20 transition-colors cursor-pointer"
-                title="End private conversation"
-                style={{ borderColor: 'var(--destructive)' }}
-              >
-                <XCircle className="w-4 h-4" style={{ color: 'var(--destructive)' }} />
-                <span style={{ color: 'var(--destructive)' }}>END CHAT</span>
-              </button>
-            )}
-            {!activeConversation && conversations.length === 0 && (
+            {activeConversation ? (
+              <>
+                {dmCountdown !== null && (
+                  <div className="status-badge" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--destructive)' }}>
+                    <Timer className="w-4 h-4 animate-pulse" style={{ color: 'var(--destructive)' }} />
+                    <span className="font-bold" style={{ color: 'var(--destructive)' }}>
+                      {dmCountdown}s
+                    </span>
+                    <span style={{ color: 'var(--destructive)', fontWeight: 600 }}>DELETE</span>
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowEndChatModal(true)}
+                  className="status-badge hover:bg-destructive/20 transition-colors cursor-pointer"
+                  title="End private conversation"
+                  style={{ borderColor: 'var(--destructive)' }}
+                >
+                  <XCircle className="w-4 h-4" style={{ color: 'var(--destructive)' }} />
+                  <span style={{ color: 'var(--destructive)' }}>END CHAT</span>
+                </button>
+              </>
+            ) : conversations.length === 0 && (
               <div className="status-badge">
                 <Timer className="w-4 h-4" style={{ color: 'var(--destructive)' }} />
                 <span className="font-bold" style={{ color: 'var(--destructive)' }}>
@@ -368,16 +405,6 @@ const Chat = () => {
                 </div>
               </div>
             </div>
-            {activeConversation && (
-              <button
-                onClick={() => setActiveConversation(null)}
-                className="status-badge hover:bg-yellow-900/20 transition-colors cursor-pointer"
-                title="Close DM"
-              >
-                <X className="w-4 h-4" style={{ color: 'var(--secondary)' }} />
-                <span style={{ color: 'var(--secondary)' }}>CLOSE DM</span>
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -438,6 +465,88 @@ const Chat = () => {
         activeDM={activeConversation}
       />
       </div>
+
+      {/* Modal de confirmación para terminar chat */}
+      {showEndChatModal && activeConversation && (
+        <>
+          <div 
+            className="modal-overlay" 
+            onClick={() => setShowEndChatModal(false)}
+            style={{ zIndex: 100 }}
+          />
+          <div className="user-modal" style={{ zIndex: 101, maxWidth: '400px' }}>
+            <div className="user-modal-header" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--destructive)' }}>
+              <XCircle className="w-6 h-6" style={{ color: 'var(--destructive)' }} />
+              <div style={{ marginLeft: '1rem', flex: 1 }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--destructive)', margin: 0 }}>End Private Chat?</h3>
+                <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', margin: '0.25rem 0 0' }}>with @{activeConversation}</p>
+              </div>
+              <button
+                onClick={() => setShowEndChatModal(false)}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="user-modal-body">
+              <p style={{ color: 'var(--muted-foreground)', marginBottom: '1rem', lineHeight: 1.6 }}>
+                {dmCountdown !== null ? (
+                  <>
+                    This chat is already ending. All messages will be deleted in <span style={{ color: 'var(--destructive)', fontWeight: 700 }}>{dmCountdown} seconds</span>.
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to end this private conversation? All messages will be automatically deleted after <span style={{ color: 'var(--destructive)', fontWeight: 700 }}>30 seconds</span>.
+                  </>
+                )}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  onClick={() => {
+                    endConversation(activeConversation);
+                    setShowEndChatModal(false);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem 1.5rem',
+                    background: 'var(--destructive)',
+                    color: 'var(--destructive-foreground)',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontFamily: 'JetBrains Mono, monospace'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                >
+                  Yes, End Chat
+                </button>
+                <button
+                  onClick={() => setShowEndChatModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem 1.5rem',
+                    background: 'var(--muted)',
+                    color: 'var(--foreground)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.5rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontFamily: 'JetBrains Mono, monospace'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--muted)'}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
