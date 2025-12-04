@@ -156,13 +156,20 @@ const Chat = () => {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative', width: '100%' }}>
       {/* Overlay para móvil cuando el sidebar está abierto */}
       {!sidebarCollapsed && (
         <div 
-          className="md:hidden fixed inset-0 bg-black/50 z-10"
+          className="sidebar-overlay"
           onClick={handleToggleSidebar}
-          style={{ backdropFilter: 'blur(2px)' }}
+          style={{ 
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 40,
+            display: window.innerWidth < 768 ? 'block' : 'none'
+          }}
         />
       )}
       
@@ -171,10 +178,14 @@ const Chat = () => {
         onToggle={handleToggleSidebar}
         currentUser={nickname}
         onDeleteSession={handleDeleteAllData}
-        onChannelSelect={() => {}}
+        onChannelSelect={() => {
+          if (window.innerWidth < 768) {
+            handleToggleSidebar();
+          }
+        }}
       />
       
-      <div className="chat-container" style={{ flex: 1, minWidth: 0 }}>
+      <div className="chat-container" style={{ flex: 1, minWidth: 0, width: '100%', maxWidth: '100%' }}>
         {/* Efecto de líneas de escaneo */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="scan-line" style={{ top: 0 }} />
@@ -183,32 +194,33 @@ const Chat = () => {
         </div>
 
         <header className="chat-header">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2" style={{ flex: '1 1 auto', minWidth: 0 }}>
             {sidebarCollapsed && (
               <button
                 onClick={handleToggleSidebar}
                 className="status-badge hover:bg-accent transition-colors cursor-pointer"
                 title="Show sidebar"
+                style={{ flexShrink: 0 }}
               >
                 <Menu className="w-4 h-4" style={{ color: 'var(--primary)' }} />
               </button>
             )}
-            <div className="relative">
-              <Terminal className="w-8 h-8" style={{ color: 'var(--primary)' }} />
-              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse" style={{ background: 'var(--primary)' }} />
+            <div className="relative" style={{ flexShrink: 0 }}>
+              <Terminal className="w-6 h-6 md:w-8 md:h-8" style={{ color: 'var(--primary)' }} />
+              <div className="absolute -top-1 -right-1 w-2 h-2 md:w-3 md:h-3 rounded-full animate-pulse" style={{ background: 'var(--primary)' }} />
             </div>
-            <div>
-              <h1 className="chat-header-title glitch-text">
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <h1 className="chat-header-title glitch-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeConversation ? `@${activeConversation}` : 'DarkWhisper'}
               </h1>
-              <p className="text-xs font-mono" style={{ color: 'var(--muted-foreground)' }}>
+              <p className="text-xs font-mono hidden md:block" style={{ color: 'var(--muted-foreground)' }}>
                 {'>'} {activeConversation ? 'Private conversation' : 'Encrypted · Anonymous · Ephemeral'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs md:text-sm">
+          <div className="flex items-center gap-2 text-xs flex-wrap" style={{ flexShrink: 0 }}>
             {activeConversation && (
               <button
                 onClick={() => endConversation(activeConversation)}
@@ -220,10 +232,6 @@ const Chat = () => {
                 <span style={{ color: 'var(--destructive)' }}>END CHAT</span>
               </button>
             )}
-            <div className="status-badge">
-              <Wifi className="w-4 h-4 animate-pulse" style={{ color: 'var(--primary)' }} />
-              <span style={{ color: 'var(--muted-foreground)' }}>CONNECTED</span>
-            </div>
             {!activeConversation && conversations.length === 0 && (
               <div className="status-badge">
                 <Timer className="w-4 h-4" style={{ color: 'var(--destructive)' }} />
@@ -254,18 +262,21 @@ const Chat = () => {
               </button>
               {showLanguageMenu && (
                 <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '0.5rem',
+                  position: 'fixed',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
                   background: 'var(--card)',
                   border: '1px solid var(--border)',
                   borderRadius: '0.5rem',
                   padding: '0.75rem',
                   minWidth: '200px',
+                  maxWidth: 'calc(100vw - 2rem)',
+                  maxHeight: 'calc(100vh - 4rem)',
+                  overflowY: 'auto',
                   zIndex: 1000,
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
-                }}>
+                }} className="language-menu-popup">
                   <div style={{ marginBottom: '0.75rem' }}>
                     <label style={{
                       display: 'flex',
@@ -369,19 +380,6 @@ const Chat = () => {
             )}
           </div>
         </div>
-
-        <div className="flex items-center gap-2 px-4 py-2 mt-3 rounded text-xs border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
-          <Shield className="w-4 h-4" style={{ color: 'var(--primary)' }} />
-          <span style={{ color: 'var(--muted-foreground)' }}>
-            {'>'} Connected as <span className="font-bold" style={{ color: 'var(--primary)' }}>{nickname}</span> · <span className="font-bold" style={{ color: 'var(--primary)' }}>E2E Encrypted</span> · Firebase cannot read your messages
-          </span>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2 mt-2 rounded text-xs border" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--destructive)' }}>
-          <Trash2 className="w-4 h-4 animate-pulse" style={{ color: 'var(--destructive)' }} />
-          <span style={{ color: 'var(--muted-foreground)' }}>
-            {'>'} <span className="font-bold" style={{ color: 'var(--destructive)' }}>AUTO-DELETE:</span> All messages erased every 120s · 100% anonymous · No traces left
-          </span>
-        </div>
       </header>
 
       {(authError || chatError) && (
@@ -406,22 +404,23 @@ const Chat = () => {
 
       {typingUsers.length > 0 && (
         <div style={{ 
-          padding: '0.5rem 1rem', 
+          padding: '0.5rem 0.75rem', 
           display: 'flex', 
           alignItems: 'center', 
-          gap: '0.75rem',
+          gap: '0.5rem',
           background: 'rgba(0, 255, 136, 0.05)',
           borderLeft: '3px solid var(--primary)',
           borderTop: '1px solid var(--border)',
           position: 'relative',
-          zIndex: 10
-        }}>
+          zIndex: 10,
+          flexWrap: 'wrap'
+        }} className="typing-indicator-container">
           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
             <div style={{ width: '0.5rem', height: '0.5rem', background: 'var(--primary)', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out' }} />
             <div style={{ width: '0.5rem', height: '0.5rem', background: 'var(--primary)', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out 0.15s' }} />
             <div style={{ width: '0.5rem', height: '0.5rem', background: 'var(--primary)', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out 0.3s' }} />
           </div>
-          <span style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }} className="md:text-sm">
             <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{typingUsers.join(', ')}</span> {typingUsers.length === 1 ? 'is' : 'are'} typing...
           </span>
         </div>

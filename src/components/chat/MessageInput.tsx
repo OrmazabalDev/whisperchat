@@ -194,10 +194,10 @@ const MessageInput = memo(({ onSendMessage, disabled = false, mentionedUser, onC
               uploadingFile 
                 ? "⟳ Uploading file..." 
                 : sending 
-                ? "⟳ Encrypting and sending..." 
+                ? "⟳ Encrypting..." 
                 : activeDM 
-                ? `Message @${activeDM}... (or /help for commands) 🔒 E2E encrypted`
-                : "Type @ to mention users... (or /help for commands) 🔒 E2E encrypted"
+                ? `Message @${activeDM}... 🔒`
+                : "Type your message... 🔒"
             }
             disabled={isDisabled}
             className="message-textarea"
@@ -229,9 +229,13 @@ const MessageInput = memo(({ onSendMessage, disabled = false, mentionedUser, onC
           type="submit" 
           disabled={!canSend} 
           className="send-button"
-          style={{ fontSize: '1.5rem' }}
+          title={canSend ? "Send message (Enter)" : "Type a message to send"}
         >
-          {sending ? '⟳' : '⚡'}
+          {sending ? (
+            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
+          ) : (
+            <span style={{ fontSize: '1.25rem' }}>⚡</span>
+          )}
         </button>
       </form>
       
@@ -240,15 +244,28 @@ const MessageInput = memo(({ onSendMessage, disabled = false, mentionedUser, onC
         justifyContent: 'space-between', 
         alignItems: 'center', 
         marginTop: '0.5rem',
-        fontSize: '0.75rem',
-        color: 'var(--muted-foreground)'
+        fontSize: '0.65rem',
+        color: 'var(--muted-foreground)',
+        flexWrap: 'wrap',
+        gap: '0.25rem'
       }}>
-        <div>
-          {'>'} <kbd style={{ padding: '0.125rem 0.375rem', background: 'var(--muted)', borderRadius: '0.25rem' }}>Enter</kbd> to send · <kbd style={{ padding: '0.125rem 0.375rem', background: 'var(--muted)', borderRadius: '0.25rem' }}>Shift+Enter</kbd> for new line · <kbd style={{ padding: '0.125rem 0.375rem', background: 'var(--muted)', borderRadius: '0.25rem' }}>@</kbd> to mention
+        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="hidden md:inline">{'>'}</span>
+          <span className="hidden sm:inline">
+            <kbd style={{ padding: '0.125rem 0.25rem', background: 'var(--muted)', borderRadius: '0.25rem', fontSize: '0.625rem' }}>Enter</kbd> to send
+          </span>
+          <span className="hidden md:inline">·</span>
+          <span className="hidden md:inline">
+            <kbd style={{ padding: '0.125rem 0.25rem', background: 'var(--muted)', borderRadius: '0.25rem', fontSize: '0.625rem' }}>Shift+Enter</kbd> new line
+          </span>
+          <span className="hidden lg:inline">·</span>
+          <span className="hidden lg:inline">
+            <kbd style={{ padding: '0.125rem 0.25rem', background: 'var(--muted)', borderRadius: '0.25rem', fontSize: '0.625rem' }}>@</kbd> mention
+          </span>
         </div>
         <div>
           {message.length > 800 && (
-            <span style={{ color: message.length >= 1000 ? 'var(--destructive)' : 'var(--warning)' }}>
+            <span style={{ color: message.length >= 1000 ? 'var(--destructive)' : 'var(--warning)', fontSize: '0.65rem' }}>
               {message.length}/1000
             </span>
           )}

@@ -45,19 +45,46 @@ const WelcomeScreen = ({ onJoinChat, loading }: WelcomeScreenProps) => {
           {'>'} Encrypted · Anonymous · Ephemeral
         </p>
         
-        <div className="info-box" role="list" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
-          <p role="listitem" className="flex items-center gap-2" style={{ marginBottom: '0.75rem' }}>
-            <Shield className="w-5 h-5" style={{ color: 'var(--primary)' }} /> 
-            <span>{'>'} No registration required</span>
-          </p>
-          <p role="listitem" className="flex items-center gap-2" style={{ marginBottom: '0.75rem' }}>
-            <Terminal className="w-5 h-5" style={{ color: 'var(--secondary)' }} /> 
-            <span>{'>'} Completely anonymous</span>
-          </p>
-          <p role="listitem" className="flex items-center gap-2">
-            <Zap className="w-5 h-5" style={{ color: 'var(--primary)' }} /> 
-            <span>{'>'} Real-time encrypted messaging</span>
-          </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '2rem' }} className="welcome-info-grid">
+          <div className="info-box" role="list" style={{ padding: '1.5rem', background: 'rgba(0, 255, 136, 0.05)', borderColor: 'rgba(0, 255, 136, 0.3)' }}>
+            <h3 style={{ color: 'var(--primary)', fontSize: '0.875rem', fontWeight: 700, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {'>'} Features
+            </h3>
+            <p role="listitem" className="flex items-center gap-2" style={{ marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+              <Shield className="w-4 h-4" style={{ color: 'var(--primary)', flexShrink: 0 }} /> 
+              <span>End-to-End Encrypted (E2E) - Firebase cannot read messages</span>
+            </p>
+            <p role="listitem" className="flex items-center gap-2" style={{ marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+              <Terminal className="w-4 h-4" style={{ color: 'var(--secondary)', flexShrink: 0 }} /> 
+              <span>Auto-delete: All messages erased every 120 seconds</span>
+            </p>
+            <p role="listitem" className="flex items-center gap-2" style={{ marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+              <Zap className="w-4 h-4" style={{ color: 'var(--primary)', flexShrink: 0 }} /> 
+              <span>Private DMs with encryption - Use /dm username</span>
+            </p>
+            <p role="listitem" className="flex items-center gap-2" style={{ fontSize: '0.875rem' }}>
+              <Shield className="w-4 h-4" style={{ color: 'var(--primary)', flexShrink: 0 }} /> 
+              <span>No registration - 100% anonymous - No data stored</span>
+            </p>
+          </div>
+          
+          <div className="info-box" style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--destructive)' }}>
+            <h3 style={{ color: 'var(--destructive)', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {'>'} Disclaimer & Terms
+            </h3>
+            <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
+              This platform is provided "AS IS" for educational and communication purposes only. 
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
+              {'>'} You are solely responsible for your content and actions.
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
+              {'>'} The owner/operator is NOT responsible for user-generated content.
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', lineHeight: 1.4 }}>
+              {'>'} Illegal activities are prohibited. By using this service, you agree to these terms.
+            </p>
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="nickname-form" noValidate>
@@ -100,9 +127,8 @@ const WelcomeScreen = ({ onJoinChat, loading }: WelcomeScreenProps) => {
           </button>
         </form>
 
-        <div className="text-center text-xs font-mono" style={{ marginTop: '2rem', color: 'var(--muted-foreground)' }}>
-          <p>{'>'} WARNING: This is an anonymous chat platform</p>
-          <p style={{ marginTop: '0.25rem' }}>{'>'} Enter at your own risk · E2E Encryption enabled</p>
+        <div className="text-center text-xs font-mono" style={{ marginTop: '1.5rem', color: 'var(--muted-foreground)' }}>
+          <p style={{ color: 'var(--warning)', fontWeight: 600 }}>{'>'} By clicking "JOIN CHAT" you accept all terms above</p>
         </div>
       </div>
     </div>
