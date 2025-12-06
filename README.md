@@ -1,3 +1,5 @@
+Markdown
+
 # 🕵️ DarkWhisper - Anonymous Encrypted Chat
 
 <div align="center">
@@ -22,19 +24,20 @@
 
 ### 📋 Descripción
 
-**DarkWhisper** es una aplicación de chat en tiempo real que prioriza la privacidad y el anonimato. Diseñada con fines educativos y de demostración de portafolio, implementa cifrado de extremo a extremo (E2EE) y auto-eliminación automática de mensajes cada 60 segundos.
+**DarkWhisper** es una aplicación de chat en tiempo real que prioriza la privacidad y el anonimato. Diseñada con fines educativos y de demostración de portafolio, implementa cifrado de extremo a extremo (E2EE) y auto-eliminación automática de mensajes cada 120 segundos.
 
 ### ✨ Características Principales
 
 - 🔐 **Cifrado de Extremo a Extremo**: Todos los mensajes se cifran con AES-GCM de 256 bits
-- ⏱️ **Auto-eliminación**: Los mensajes se eliminan automáticamente después de 60 segundos
+- ⏱️ **Auto-eliminación**: Los mensajes y archivos se eliminan automáticamente después de 120 segundos
+- 🗣️ **Traducción en Tiempo Real**: Traducción automática de mensajes entre 12 idiomas
 - 👤 **100% Anónimo**: Sin registro, sin historial, sin datos personales
 - 🌐 **Multi-plataforma**: Disponible como aplicación web y de escritorio (Electron)
-- 📎 **Envío de archivos**: Soporte para imágenes, videos, audio y documentos
+- 📎 **Envío de archivos**: Soporte cifrado para imágenes y documentos (PDF, TXT) en Base64
 - 👥 **Presencia en tiempo real**: Visualiza cuántos usuarios están conectados
+- 🔊 **Sonidos Sintetizados**: Notificaciones de audio generadas en tiempo real (Web Audio API)
 - 💬 **Indicador de escritura**: Notificación cuando otros usuarios están escribiendo
-- 🎨 **UI Moderna**: Interfaz oscura diseñada con Tailwind CSS
-- ⚡ **Tiempo Real**: Sincronización instantánea con Firebase Realtime Database
+- 🎨 **UI Moderna**: Interfaz oscura "Cyberpunk" diseñada con Tailwind CSS
 
 ### 🛠️ Tecnologías Utilizadas
 
@@ -48,9 +51,10 @@
 #### Backend & Servicios
 - **Firebase 10.7**
   - Authentication (Anónima)
-  - Realtime Database (Mensajes y presencia)
-  - Storage (Archivos multimedia)
+  - Realtime Database (Mensajes, presencia y almacenamiento de archivos en Base64)
 - **Web Crypto API** - Cifrado AES-GCM del lado del cliente
+- **Web Audio API** - Generación de efectos de sonido sin archivos externos
+- **Google Translate API** (vía fetch) - Funcionalidad de traducción multilingüe
 
 #### Desktop
 - **Electron 39.2** - Aplicación de escritorio multiplataforma
@@ -62,14 +66,13 @@
 - **Algoritmo**: AES-GCM de 256 bits
 - **Derivación de clave**: PBKDF2 con 310,000 iteraciones
 - **Vectores de inicialización**: Únicos para cada mensaje
-- **Ubicación**: Todo el cifrado ocurre en el cliente
+- **Ubicación**: Todo el cifrado ocurre en el cliente antes de enviarse
 
 #### Privacidad
 - ✅ Sin registro de usuarios
 - ✅ Sin almacenamiento de historial
 - ✅ Sin recopilación de datos personales
-- ✅ Auto-eliminación de mensajes (60s)
-- ✅ Auto-eliminación de archivos (5 minutos)
+- ✅ Auto-eliminación de mensajes y archivos (120s)
 - ✅ Sin logs del servidor
 - ✅ Sin seguimiento de usuarios
 
@@ -84,20 +87,19 @@
 
 1. **Clonar el repositorio**
 ```bash
-git clone https://github.com/OrmazabalDev/whisperchat.git
+git clone [https://github.com/OrmazabalDev/whisperchat.git](https://github.com/OrmazabalDev/whisperchat.git)
 cd whisperchat
-```
+Instalar dependencias
 
-2. **Instalar dependencias**
-```bash
+Bash
+
 npm install
-```
+Configurar Firebase
 
-3. **Configurar Firebase**
+Crea un archivo .env en la raíz del proyecto:
 
-Crea un archivo `.env` en la raíz del proyecto:
+Fragmento de código
 
-```env
 VITE_FIREBASE_API_KEY=tu_api_key
 VITE_FIREBASE_AUTH_DOMAIN=tu_auth_domain
 VITE_FIREBASE_DATABASE_URL=tu_database_url
@@ -106,15 +108,13 @@ VITE_FIREBASE_STORAGE_BUCKET=tu_storage_bucket
 VITE_FIREBASE_MESSAGING_SENDER_ID=tu_messaging_sender_id
 VITE_FIREBASE_APP_ID=tu_app_id
 VITE_FIREBASE_MEASUREMENT_ID=tu_measurement_id
-```
+Configurar reglas de Firebase
 
-4. **Configurar reglas de Firebase**
+Aplica las reglas de seguridad desde database.rules.json y firebase.json a tu proyecto Firebase.
 
-Aplica las reglas de seguridad desde `database.rules.json` y `firebase.json` a tu proyecto Firebase.
+Scripts Disponibles
+Bash
 
-#### Scripts Disponibles
-
-```bash
 # Desarrollo web
 npm run dev
 
@@ -132,11 +132,7 @@ npm run electron:build
 
 # Deploy a GitHub Pages
 npm run deploy
-```
-
-### 🏗️ Estructura del Proyecto
-
-```
+🏗️ Estructura del Proyecto
 whisperchat/
 ├── src/
 │   ├── components/
@@ -144,7 +140,7 @@ whisperchat/
 │   │   ├── layout/        # Componentes de diseño
 │   │   └── ui/            # Componentes de UI reutilizables
 │   ├── contexts/          # React Context (Auth, Chat, Crypto)
-│   ├── hooks/             # Custom React Hooks
+│   ├── hooks/             # Custom React Hooks (Translation, Presence, etc.)
 │   ├── services/          # Servicios (Auth, DB, Crypto, Storage)
 │   ├── types/             # Definiciones de TypeScript
 │   └── utils/             # Utilidades y helpers
@@ -152,174 +148,221 @@ whisperchat/
 ├── firebase.json          # Configuración de Firebase
 ├── database.rules.json    # Reglas de seguridad de Firebase
 └── vite.config.ts         # Configuración de Vite
-```
+📱 Funcionalidades Detalladas
+Autenticación
+Login anónimo automático con Firebase Auth
 
-### 📱 Funcionalidades Detalladas
+Generación de apodos aleatorios
 
-#### Autenticación
-- Login anónimo automático con Firebase Auth
-- Generación de apodos aleatorios
-- Gestión de sesión persistente
+Gestión de sesión persistente
 
-#### Mensajería
-- Envío y recepción en tiempo real
-- Cifrado E2EE con clave compartida
-- Auto-eliminación después de 60 segundos
-- Validación de longitud de mensaje (máx. 1000 caracteres)
-- Soporte para múltiples líneas
+Mensajería
+Envío y recepción en tiempo real
 
-#### Multimedia
-- Subida de imágenes (JPEG, PNG, GIF, WebP)
-- Subida de videos (MP4, WebM, MOV, AVI)
-- Subida de audio (MP3, WAV, OGG, M4A)
-- Subida de documentos (PDF, DOC, DOCX, TXT, etc.)
-- Límite de tamaño: 10 MB
-- Auto-eliminación después de 5 minutos
+Cifrado E2EE con clave compartida
 
-#### Presencia
-- Contador de usuarios activos en tiempo real
-- Sistema de heartbeat cada 30 segundos
-- Auto-limpieza de usuarios inactivos
+Auto-eliminación después de 120 segundos
 
-#### Estado de Escritura
-- Indicador visual cuando otros usuarios están escribiendo
-- Timeout automático después de 3 segundos
+Sistema de traducción integrado (12 idiomas soportados)
 
-### ⚖️ Licencia y Uso Legal
+Validación de longitud de mensaje (máx. 1000 caracteres)
 
-**Licencia**: Propietaria - Proyecto de Portafolio
+Multimedia
+Subida de imágenes (JPEG, PNG, GIF, WebP)
 
-© 2025 DarkWhisper - Desarrollado por **OrmazabalDev**
+Subida de documentos (PDF, TXT)
 
-Este software está protegido por un End User License Agreement (EULA) personalizado. Ver `LICENSE.txt` para términos completos.
+Encriptación de archivos del lado del cliente
 
-#### Propósito
+Almacenamiento directo en Realtime Database (Base64)
+
+Límite de tamaño: 2 MB (Optimizado para rendimiento en tiempo real)
+
+Se elimina automáticamente junto con el mensaje (120s)
+
+Presencia
+Contador de usuarios activos en tiempo real
+
+Sistema de heartbeat cada 30 segundos
+
+Auto-limpieza de usuarios inactivos
+
+Estado de Escritura
+Indicador visual cuando otros usuarios están escribiendo
+
+Timeout automático después de 3 segundos
+
+⚖️ Licencia y Uso Legal
+Licencia: Propietaria - Proyecto de Portafolio
+
+© 2025 DarkWhisper - Desarrollado por OrmazabalDev
+
+Este software está protegido por un End User License Agreement (EULA) personalizado. Ver LICENSE.txt para términos completos.
+
+Propósito
 Este proyecto es con fines de:
-- ✅ **Portafolio** - Demostración de habilidades técnicas
-- ✅ **Educación** - Aprendizaje de cifrado y comunicación en tiempo real
-- ✅ **Pruebas** - Experimentación con tecnologías de privacidad
 
-#### Restricciones Importantes
-- ⚠️ **NO para uso en producción sin modificaciones**
-- ⚠️ **NO para actividades ilegales**
-- ⚠️ **SIN GARANTÍA** - Proporcionado "TAL CUAL"
-- ⚠️ El desarrollador NO es responsable del contenido de los usuarios
-- ⚠️ El desarrollador NO puede acceder, recuperar o controlar mensajes
+✅ Portafolio - Demostración de habilidades técnicas
 
-### 🤝 Contribuciones
+✅ Educación - Aprendizaje de cifrado y comunicación en tiempo real
 
+✅ Pruebas - Experimentación con tecnologías de privacidad
+
+Restricciones Importantes
+⚠️ NO para uso en producción sin modificaciones
+
+⚠️ NO para actividades ilegales
+
+⚠️ SIN GARANTÍA - Proporcionado "TAL CUAL"
+
+⚠️ El desarrollador NO es responsable del contenido de los usuarios
+
+⚠️ El desarrollador NO puede acceder, recuperar o controlar mensajes
+
+🤝 Contribuciones
 Este es un proyecto de portafolio personal. Si encuentras bugs o tienes sugerencias:
 
-1. Abre un Issue describiendo el problema o mejora
-2. Si deseas contribuir, haz un Fork del proyecto
-3. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-4. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-5. Push a la rama (`git push origin feature/AmazingFeature`)
-6. Abre un Pull Request
+Abre un Issue describiendo el problema o mejora
 
-### 👨‍💻 Autor
+Si deseas contribuir, haz un Fork del proyecto
 
-**OrmazabalDev**
-- GitHub: [@OrmazabalDev](https://github.com/OrmazabalDev)
-- Portfolio: https://ormazabaldev.github.io/devportfolio-master/
+Crea una rama para tu feature (git checkout -b feature/AmazingFeature)
 
-### 📧 Contacto
+Commit tus cambios (git commit -m 'Add some AmazingFeature')
 
+Push a la rama (git push origin feature/AmazingFeature)
+
+Abre un Pull Request
+
+👨‍💻 Autor
+OrmazabalDev
+
+GitHub: @OrmazabalDev
+
+Portfolio: https://ormazabaldev.github.io/devportfolio-master/
+
+📧 Contacto
 Para preguntas sobre el proyecto, por favor abre un Issue en GitHub.
 
-### ⚠️ Descargo de Responsabilidad
-
+⚠️ Descargo de Responsabilidad
 Este software es un proyecto de demostración. El desarrollador:
-- NO recopila datos personales
-- NO monitorea conversaciones
-- NO puede recuperar mensajes eliminados
-- NO es responsable del uso que se le dé a la aplicación
-- NO respalda ninguna comunicación de usuarios
 
-**Usa bajo tu propia responsabilidad.**
+NO recopila datos personales
 
----
+NO monitorea conversaciones
 
-## 🇬🇧 English Version
+CANNOT recuperar mensajes eliminados
 
-### 📋 Description
+NO es responsable del uso que se le dé a la aplicación
 
-**DarkWhisper** is a real-time chat application that prioritizes privacy and anonymity. Designed for educational purposes and portfolio demonstration, it implements end-to-end encryption (E2EE) and automatic message deletion every 60 seconds.
+NO respalda ninguna comunicación de usuarios
 
-### ✨ Key Features
+Usa bajo tu propia responsabilidad.
 
-- 🔐 **End-to-End Encryption**: All messages encrypted with 256-bit AES-GCM
-- ⏱️ **Auto-deletion**: Messages automatically deleted after 60 seconds
-- 👤 **100% Anonymous**: No registration, no history, no personal data
-- 🌐 **Cross-platform**: Available as web and desktop app (Electron)
-- 📎 **File Sharing**: Support for images, videos, audio, and documents
-- 👥 **Real-time Presence**: See how many users are connected
-- 💬 **Typing Indicator**: Notification when other users are typing
-- 🎨 **Modern UI**: Dark interface designed with Tailwind CSS
-- ⚡ **Real-time**: Instant synchronization with Firebase Realtime Database
+🇬🇧 English Version
+📋 Description
+DarkWhisper is a real-time chat application that prioritizes privacy and anonymity. Designed for educational purposes and portfolio demonstration, it implements end-to-end encryption (E2EE) and automatic message deletion every 120 seconds.
 
-### 🛠️ Tech Stack
+✨ Key Features
+🔐 End-to-End Encryption: All messages encrypted with 256-bit AES-GCM
 
-#### Frontend
-- **React 18.2** - UI library
-- **TypeScript 5.2** - Static typing and better DX
-- **Vite 5.0** - Next-generation build tool
-- **Tailwind CSS 4.1** - Utility-first CSS framework
-- **Lucide React** - Modern customizable icons
+⏱️ Auto-deletion: Messages and files automatically deleted after 120 seconds
 
-#### Backend & Services
-- **Firebase 10.7**
-  - Authentication (Anonymous)
-  - Realtime Database (Messages and presence)
-  - Storage (Media files)
-- **Web Crypto API** - Client-side AES-GCM encryption
+🗣️ Real-time Translation: Automatic message translation across 12 languages
 
-#### Desktop
-- **Electron 39.2** - Cross-platform desktop app
-- **Electron Builder** - Packaging and distribution
+👤 100% Anonymous: No registration, no history, no personal data
 
-### 🔒 Security & Privacy
+🌐 Cross-platform: Available as web and desktop app (Electron)
 
-#### Encryption
-- **Algorithm**: 256-bit AES-GCM
-- **Key derivation**: PBKDF2 with 310,000 iterations
-- **Initialization vectors**: Unique per message
-- **Location**: All encryption happens client-side
+📎 File Sharing: Encrypted support for images and documents (PDF, TXT) via Base64
 
-#### Privacy
-- ✅ No user registration
-- ✅ No history storage
-- ✅ No personal data collection
-- ✅ Auto-delete messages (60s)
-- ✅ Auto-delete files (5 minutes)
-- ✅ No server logs
-- ✅ No user tracking
+👥 Real-time Presence: See how many users are connected
 
-### 📦 Installation & Usage
+🔊 Synthesized Sounds: Real-time generated audio notifications (Web Audio API)
 
-#### Prerequisites
-- Node.js 18+ and npm
-- Firebase account (for configuration)
-- Git
+💬 Typing Indicator: Notification when other users are typing
 
-#### Setup
+🎨 Modern UI: Dark "Cyberpunk" interface designed with Tailwind CSS
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/OrmazabalDev/whisperchat.git
+🛠️ Tech Stack
+Frontend
+React 18.2 - UI library
+
+TypeScript 5.2 - Static typing and better DX
+
+Vite 5.0 - Next-generation build tool
+
+Tailwind CSS 4.1 - Utility-first CSS framework
+
+Lucide React - Modern customizable icons
+
+Backend & Services
+Firebase 10.7
+
+Authentication (Anonymous)
+
+Realtime Database (Messages, presence, and Base64 file storage)
+
+Web Crypto API - Client-side AES-GCM encryption
+
+Web Audio API - Sound effect generation without external files
+
+Google Translate API (via fetch) - Multilingual translation features
+
+Desktop
+Electron 39.2 - Cross-platform desktop app
+
+Electron Builder - Packaging and distribution
+
+🔒 Security & Privacy
+Encryption
+Algorithm: 256-bit AES-GCM
+
+Key derivation: PBKDF2 with 310,000 iterations
+
+Initialization vectors: Unique per message
+
+Location: All encryption happens client-side
+
+Privacy
+✅ No user registration
+
+✅ No history storage
+
+✅ No personal data collection
+
+✅ Auto-delete messages and files (120s)
+
+✅ No server logs
+
+✅ No user tracking
+
+📦 Installation & Usage
+Prerequisites
+Node.js 18+ and npm
+
+Firebase account (for configuration)
+
+Git
+
+Setup
+Clone the repository
+
+Bash
+
+git clone [https://github.com/OrmazabalDev/whisperchat.git](https://github.com/OrmazabalDev/whisperchat.git)
 cd whisperchat
-```
+Install dependencies
 
-2. **Install dependencies**
-```bash
+Bash
+
 npm install
-```
+Configure Firebase
 
-3. **Configure Firebase**
+Create a .env file in the project root:
 
-Create a `.env` file in the project root:
+Fragmento de código
 
-```env
 VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
 VITE_FIREBASE_DATABASE_URL=your_database_url
@@ -328,15 +371,13 @@ VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
-```
+Configure Firebase rules
 
-4. **Configure Firebase rules**
+Apply security rules from database.rules.json and firebase.json to your Firebase project.
 
-Apply security rules from `database.rules.json` and `firebase.json` to your Firebase project.
+Available Scripts
+Bash
 
-#### Available Scripts
-
-```bash
 # Web development
 npm run dev
 
@@ -354,11 +395,7 @@ npm run electron:build
 
 # Deploy to GitHub Pages
 npm run deploy
-```
-
-### 🏗️ Project Structure
-
-```
+🏗️ Project Structure
 whisperchat/
 ├── src/
 │   ├── components/
@@ -366,7 +403,7 @@ whisperchat/
 │   │   ├── layout/        # Layout components
 │   │   └── ui/            # Reusable UI components
 │   ├── contexts/          # React Context (Auth, Chat, Crypto)
-│   ├── hooks/             # Custom React Hooks
+│   ├── hooks/             # Custom React Hooks (Translation, Presence, etc.)
 │   ├── services/          # Services (Auth, DB, Crypto, Storage)
 │   ├── types/             # TypeScript definitions
 │   └── utils/             # Utilities and helpers
@@ -374,97 +411,120 @@ whisperchat/
 ├── firebase.json          # Firebase configuration
 ├── database.rules.json    # Firebase security rules
 └── vite.config.ts         # Vite configuration
-```
+📱 Detailed Features
+Authentication
+Automatic anonymous login with Firebase Auth
 
-### 📱 Detailed Features
+Random nickname generation
 
-#### Authentication
-- Automatic anonymous login with Firebase Auth
-- Random nickname generation
-- Persistent session management
+Persistent session management
 
-#### Messaging
-- Real-time send and receive
-- E2EE encryption with shared key
-- Auto-deletion after 60 seconds
-- Message length validation (max 1000 chars)
-- Multi-line support
+Messaging
+Real-time send and receive
 
-#### Multimedia
-- Image upload (JPEG, PNG, GIF, WebP)
-- Video upload (MP4, WebM, MOV, AVI)
-- Audio upload (MP3, WAV, OGG, M4A)
-- Document upload (PDF, DOC, DOCX, TXT, etc.)
-- Size limit: 10 MB
-- Auto-deletion after 5 minutes
+E2EE encryption with shared key
 
-#### Presence
-- Real-time active user counter
-- Heartbeat system every 30 seconds
-- Auto-cleanup of inactive users
+Auto-deletion after 120 seconds
 
-#### Typing Status
-- Visual indicator when other users are typing
-- Auto-timeout after 3 seconds
+Integrated translation system (12 languages supported)
 
-### ⚖️ License & Legal Use
+Message length validation (max 1000 chars)
 
-**License**: Proprietary - Portfolio Project
+Multimedia
+Image upload (JPEG, PNG, GIF, WebP)
 
-© 2025 DarkWhisper - Developed by **OrmazabalDev**
+Document upload (PDF, TXT)
 
-This software is protected by a custom End User License Agreement (EULA). See `LICENSE.txt` for complete terms.
+Client-side file encryption
 
-#### Purpose
+Direct storage in Realtime Database (Base64)
+
+Size limit: 2 MB (Optimized for real-time performance)
+
+Auto-deleted alongside the message (120s)
+
+Presence
+Real-time active user counter
+
+Heartbeat system every 30 seconds
+
+Auto-cleanup of inactive users
+
+Typing Status
+Visual indicator when other users are typing
+
+Auto-timeout after 3 seconds
+
+⚖️ License & Legal Use
+License: Proprietary - Portfolio Project
+
+© 2025 DarkWhisper - Developed by OrmazabalDev
+
+This software is protected by a custom End User License Agreement (EULA). See LICENSE.txt for complete terms.
+
+Purpose
 This project is for:
-- ✅ **Portfolio** - Technical skills demonstration
-- ✅ **Education** - Learning encryption and real-time communication
-- ✅ **Testing** - Experimentation with privacy technologies
 
-#### Important Restrictions
-- ⚠️ **NOT for production use without modifications**
-- ⚠️ **NOT for illegal activities**
-- ⚠️ **NO WARRANTY** - Provided "AS IS"
-- ⚠️ Developer is NOT responsible for user content
-- ⚠️ Developer CANNOT access, recover, or control messages
+✅ Portfolio - Technical skills demonstration
 
-### 🤝 Contributions
+✅ Education - Learning encryption and real-time communication
 
+✅ Testing - Experimentation with privacy technologies
+
+Important Restrictions
+⚠️ NOT for production use without modifications
+
+⚠️ NOT for illegal activities
+
+⚠️ NO WARRANTY - Provided "AS IS"
+
+⚠️ Developer is NOT responsible for user content
+
+⚠️ Developer CANNOT access, recover, or control messages
+
+🤝 Contributions
 This is a personal portfolio project. If you find bugs or have suggestions:
 
-1. Open an Issue describing the problem or improvement
-2. If you wish to contribute, Fork the project
-3. Create a branch for your feature (`git checkout -b feature/AmazingFeature`)
-4. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-5. Push to the branch (`git push origin feature/AmazingFeature`)
-6. Open a Pull Request
+Open an Issue describing the problem or improvement
 
-### 👨‍💻 Author
+If you wish to contribute, Fork the project
 
-**OrmazabalDev**
-- GitHub: [@OrmazabalDev](https://github.com/OrmazabalDev)
-- Portfolio: https://ormazabaldev.github.io/devportfolio-master/
+Create a branch for your feature (git checkout -b feature/AmazingFeature)
 
-### 📧 Contact
+Commit your changes (git commit -m 'Add some AmazingFeature')
 
+Push to the branch (git push origin feature/AmazingFeature)
+
+Open a Pull Request
+
+👨‍💻 Author
+OrmazabalDev
+
+GitHub: @OrmazabalDev
+
+Portfolio: https://ormazabaldev.github.io/devportfolio-master/
+
+📧 Contact
 For questions about the project, please open an Issue on GitHub.
 
-### ⚠️ Disclaimer
-
+⚠️ Disclaimer
 This software is a demonstration project. The developer:
-- Does NOT collect personal data
-- Does NOT monitor conversations
-- CANNOT recover deleted messages
-- Is NOT responsible for how the application is used
-- Does NOT endorse any user communications
 
-**Use at your own risk.**
+Does NOT collect personal data
 
----
+Does NOT monitor conversations
+
+CANNOT recover deleted messages
+
+Is NOT responsible for how the application is used
+
+Does NOT endorse any user communications
+
+Use at your own risk.
 
 <div align="center">
 
-**Made with ❤️ by OrmazabalDev**
+Made with ❤️ by OrmazabalDev
 
 ⭐ If you find this project useful, please give it a star!
 
